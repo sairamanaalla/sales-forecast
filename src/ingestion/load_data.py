@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 
-from pyspark.sql.functions import current_timestamp,lit
+from pyspark.sql.functions import *
 
 from schemas import (
     sales_schema,
@@ -18,6 +18,8 @@ spark = (
 )
 
 # Reading Raw files from data/raw
+
+print("Starting Bronze Layer Creation")
 
 sales_df = (
     spark.read
@@ -51,6 +53,23 @@ validate_columns(
         "region",
         "quantity",
         "price"
+    ]
+)
+
+validate_columns(
+    products_df,
+    [
+        "sku",
+        "category",
+        "brand"
+    ]
+)
+
+validate_columns(
+    stores_df,
+    [
+        "store_id",
+        "region"
     ]
 )
 
@@ -98,3 +117,75 @@ stores_df.write.mode("overwrite").parquet(
 )
 
 print("Bronze layer created successfully")
+
+#-----------------------------------------
+# SIlver Layer Creation 
+#-----------------------------------------
+
+print("Starting Silver Layer Creation")
+
+bronze_sales_df = spark.read.parquet(
+    "data_lake/bronze/sales"
+)
+
+bronze_products_df = spark.read.parquet(
+    "data_lake/bronze/products"
+)
+
+bronze_sales_df = bronze_sales_df.withColumn(
+    "event_date",
+    expr("try_to_timestamp(date, 'yyyy-MM-dd')").cast("date")
+)
+
+# Data Quality Checks and Rejections
+
+invalid_condition = (
+    col("transaction_id").isNull()
+    | col("sku").isNull()
+    | col("region").isNull()
+    | col("event_date").isNull()
+    | col("quantity").isNull()
+    | col("price").isNull()
+)
+
+rejected_sales_df = bronze_sales_df.filter(
+    invalid_condition
+)
+
+valid_sales_df = bronze_sales_df.filter(
+    ~invalid_condition
+)
+
+valid_sales_df = valid_sales_df.dropDuplicates(
+    ["transaction_id"]
+)
+
+valid_sales_df = valid_sales_df.withColumn(
+    "revenue",
+    col("quantity") * col("price")
+)
+
+curated_sales_df = (
+    valid_sales_df
+    .join(
+        bronze_products_df.select(
+            "sku",
+            "category",
+            "brand"
+        ),
+        on="sku",
+        how="left"
+    )
+)
+
+# Write Silver Layer
+
+curated_sales_df.write.mode("overwrite").parquet("data_lake/silver/curated_sales")
+
+rejected_sales_df.write.mode("overwrite").parquet("data_lake/silver/rejected_sales")
+
+print(f"Curated Records: {curated_sales_df.count()}")
+
+print(f"Rejected Records: {rejected_sales_df.count()}")
+
+print("Silver layer created successfully")
