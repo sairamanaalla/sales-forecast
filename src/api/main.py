@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 import pandas as pd
+from src.llm.generate_insights import generate_insights
+
 
 app = FastAPI(
     title="Sales Forecast API",
@@ -100,3 +102,19 @@ def get_regions():
     return sorted(
         df["region"].unique().tolist()
     )
+
+@app.get("/insights")
+def get_insights():
+
+    summary_text = """
+    Top Category: Beverages
+    Top Region: South
+    Average Revenue: 1237.71
+    Revenue Trend: Increasing
+    """
+
+    insights = generate_insights(summary_text)
+
+    return {
+        "insights": insights
+    }

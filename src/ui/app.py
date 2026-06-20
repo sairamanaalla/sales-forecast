@@ -168,7 +168,10 @@ if not df.empty:
         region_df.set_index("region")
     )
 
-st.subheader("AI Insights")
+# -----------------------------
+# Business Insights
+# -----------------------------
+st.subheader("Business Insights")
 
 top_category = (
     df.groupby("category")["predicted_revenue"]
@@ -221,4 +224,17 @@ st.success(
 
     • {trend_message}
     """
+)
+
+# -----------------------------
+# AI Insights
+# -----------------------------
+st.subheader("AI Insights")
+
+insights_response = requests.get(
+    f"{API_URL}/insights"
+).json()
+
+st.info(
+    insights_response["insights"]
 )
