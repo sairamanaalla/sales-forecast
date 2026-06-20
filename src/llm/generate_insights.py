@@ -4,12 +4,20 @@ import os
 
 load_dotenv()
 
-client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com"
-)
-
 def generate_insights(summary_text):
+
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+
+    if not api_key:
+        return """
+        AI insights are currently unavailable.
+        Please verify LLM service credentials and account balance.
+        """
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.deepseek.com"
+    )
 
     try:
 
