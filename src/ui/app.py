@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
+import os
 
 st.set_page_config(
     page_title="Sales Forecast Dashboard",
@@ -10,12 +11,19 @@ st.set_page_config(
 
 st.title("📈 Sales Forecast Dashboard")
 
-API_URL = "http://fastapi:8000"
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000"
+)
 # -----------------------------
 # Load Dropdown Values
 # -----------------------------
 categories = requests.get(
     f"{API_URL}/categories"
+).json()
+
+brands = requests.get(
+    f"{API_URL}/brands"
 ).json()
 
 regions = requests.get(
@@ -30,6 +38,11 @@ selected_category = st.selectbox(
     ["All"] + categories
 )
 
+selected_brand = st.selectbox(
+    "Brand",
+    ["All"] + brands
+)
+
 selected_region = st.selectbox(
     "Region",
     ["All"] + regions
@@ -39,6 +52,9 @@ params = {}
 
 if selected_category != "All":
     params["category"] = selected_category
+
+if selected_brand != "All":
+    params["brand"] = selected_brand
 
 if selected_region != "All":
     params["region"] = selected_region
@@ -53,6 +69,14 @@ forecast = requests.get(
 
 df = pd.DataFrame(forecast)
 
+if df.empty:
+
+    st.warning(
+        "No forecast data available for the selected Category, Brand and Region combination."
+    )
+
+    st.stop()
+
 # -----------------------------
 # Summary Metrics
 # -----------------------------
@@ -61,6 +85,12 @@ if not df.empty:
     top_category = (
         df.groupby("category")
         ["predicted_revenue"]
+        .mean()
+        .idxmax()
+    )
+
+    top_brand = (
+        df.groupby("brand")["predicted_revenue"]
         .mean()
         .idxmax()
     )
@@ -217,6 +247,8 @@ st.success(
     f"""
     • Highest forecasted category: {top_category}
 
+    • Highest forecasted brand: {top_brand}
+
     • Highest forecasted region: {top_region}
 
     • Average forecasted revenue: ${avg_revenue}
@@ -230,8 +262,21 @@ st.success(
 # -----------------------------
 st.subheader("AI Insights")
 
-insights_response = requests.get(
-    f"{API_URL}/insights"
+summary_text = f"""
+Highest forecasted category: {top_category}
+
+Highest forecasted region: {top_region}
+
+Average forecasted revenue: {avg_revenue}
+
+Trend: {trend_message}
+"""
+
+insights_response = requests.post(
+    f"{API_URL}/insights",
+    json={
+        "summary_text": summary_text
+    }
 ).json()
 
 st.info(

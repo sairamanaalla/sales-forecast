@@ -4,3 +4,5 @@ __pycache__/
 .env
 sales.db
 .vscode/
+data_lake/bronze/
+data_lake/silver/

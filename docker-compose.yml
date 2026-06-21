@@ -21,6 +21,9 @@ services:
 
     env_file:
       - .env
+    
+    environment:
+      - API_URL=http://fastapi:8000
 
     depends_on:
       - fastapi

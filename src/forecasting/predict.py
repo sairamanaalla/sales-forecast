@@ -7,7 +7,13 @@ df = pd.read_parquet(
 )
 
 # Get categories and regions
-categories = df["category"].unique()
+category_brand_pairs = (
+    df[
+        ["category", "brand"]
+    ]
+    .drop_duplicates()
+)
+
 regions = df["region"].unique()
 
 # Get last date
@@ -33,7 +39,10 @@ prediction_rows = []
 
 for forecast_date in future_dates:
 
-    for category in categories:
+    for _, row in category_brand_pairs.iterrows():
+
+        category = row["category"]
+        brand = row["brand"]
 
         for region in regions:
 
@@ -52,6 +61,11 @@ for forecast_date in future_dates:
 
             if category_column in feature_row:
                 feature_row[category_column] = 1
+            
+            brand_column = f"brand_{brand}"
+
+            if brand_column in feature_row:
+                feature_row[brand_column] = 1
 
             # Set region dummy column
             region_column = f"region_{region}"
@@ -67,20 +81,24 @@ for forecast_date in future_dates:
             predicted_revenue = model.predict(X)[0]
 
             prediction_rows.append(
-                {
-                    "forecast_date": forecast_date,
-                    "category": category,
-                    "region": region,
-                    "predicted_revenue": round(
-                        predicted_revenue,
-                        2
-                    )
-                }
-            )
+    {
+        "forecast_date": forecast_date,
+        "category": category,
+        "brand": brand,
+        "region": region,
+        "predicted_revenue": round(
+            predicted_revenue,
+            2
+        )
+    }
+)
 
 forecast_df = pd.DataFrame(
     prediction_rows
 )
+
+print(forecast_df.columns)
+
 
 forecast_df.to_parquet(
     "ml/predictions/forecast.parquet",

@@ -50,7 +50,7 @@ validate_columns(
         "transaction_id",
         "date",
         "sku",
-        "region",
+        "store_id",
         "quantity",
         "price"
     ]
@@ -61,7 +61,10 @@ validate_columns(
     [
         "sku",
         "category",
-        "brand"
+        "brand",
+        "package_size",
+        "list_price",
+        "launch_date"
     ]
 )
 
@@ -69,7 +72,9 @@ validate_columns(
     stores_df,
     [
         "store_id",
-        "region"
+        "store_name",
+        "region",
+        "demographic_segment"
     ]
 )
 
@@ -132,6 +137,10 @@ bronze_products_df = spark.read.parquet(
     "data_lake/bronze/products"
 )
 
+bronze_stores_df = spark.read.parquet(
+    "data_lake/bronze/stores"
+)
+
 bronze_sales_df = bronze_sales_df.withColumn(
     "event_date",
     expr("try_to_timestamp(date, 'yyyy-MM-dd')").cast("date")
@@ -142,10 +151,12 @@ bronze_sales_df = bronze_sales_df.withColumn(
 invalid_condition = (
     col("transaction_id").isNull()
     | col("sku").isNull()
-    | col("region").isNull()
+    | col("store_id").isNull()
     | col("event_date").isNull()
     | col("quantity").isNull()
     | col("price").isNull()
+    | (col("quantity") <= 0)
+    | (col("price") <= 0)
 )
 
 rejected_sales_df = bronze_sales_df.filter(
@@ -171,11 +182,34 @@ curated_sales_df = (
         bronze_products_df.select(
             "sku",
             "category",
-            "brand"
+            "brand",
+            "package_size",
+            "list_price",
+            "launch_date"
         ),
         on="sku",
         how="left"
     )
+    .join(
+        bronze_stores_df.select(
+            "store_id",
+            "store_name",
+            "region",
+            "demographic_segment"
+        ),
+        on="store_id",
+        how="left"
+    )
+)
+
+rejected_reference_df = curated_sales_df.filter(
+    col("category").isNull()
+    | col("store_name").isNull()
+)
+
+curated_sales_df = curated_sales_df.filter(
+    col("category").isNotNull()
+    & col("store_name").isNotNull()
 )
 
 # Write Silver Layer

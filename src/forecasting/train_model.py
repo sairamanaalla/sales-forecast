@@ -17,7 +17,11 @@ df["day_of_week"] = (
 
 df = pd.get_dummies(
     df,
-    columns=["category", "region"],
+    columns=[
+        "category",
+        "brand",
+        "region"
+    ],
     drop_first=True
 )
 

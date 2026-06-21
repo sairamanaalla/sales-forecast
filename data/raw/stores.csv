@@ -1,5 +1,6 @@
-store_id,region
-1,South
-2,North
-3,East
-4,West
+store_id,store_name,region,demographic_segment
+S001,Hyderabad_01,South,Urban
+S002,Bangalore_01,South,Urban
+S003,Delhi_01,North,Urban
+S004,Mumbai_01,West,Urban
+S005,Kolkata_01,East,Urban

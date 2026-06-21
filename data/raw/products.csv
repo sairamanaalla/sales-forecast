@@ -1,6 +1,6 @@
-sku,category,brand
-SKU001,Beverages,Coke
-SKU002,Snacks,Lays
-SKU003,Dairy,Amul
-SKU004,PersonalCare,Dove
-SKU005,Beverages,Pepsi
+sku,category,brand,package_size,list_price,launch_date
+SKU001,Beverages,CocaCola,500ml,120,2022-01-01
+SKU002,Snacks,Lays,100g,80,2022-06-01
+SKU003,PersonalCare,Dove,200ml,150,2021-01-01
+SKU004,Dairy,Amul,1L,250,2020-01-01
+SKU005,Beverages,Pepsi,500ml,100,2023-01-01

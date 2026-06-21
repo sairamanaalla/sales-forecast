@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import pandas as pd
 from src.llm.generate_insights import generate_insights
-
+from pydantic import BaseModel
 
 app = FastAPI(
     title="Sales Forecast API",
@@ -20,6 +20,7 @@ def health():
 @app.get("/forecast")
 def get_forecast(
     category: str = None,
+    brand: str = None,
     region: str = None
 ):
 
@@ -30,6 +31,11 @@ def get_forecast(
     if category:
         df = df[
             df["category"] == category
+        ]
+
+    if brand:
+        df = df[
+            df["brand"] == brand
         ]
 
     if region:
@@ -52,6 +58,12 @@ def get_summary():
     return {
         "top_category": (
             df.groupby("category")["predicted_revenue"]
+            .mean()
+            .idxmax()
+        ),
+
+        "top_brand": (
+            df.groupby("brand")["predicted_revenue"]
             .mean()
             .idxmax()
         ),
@@ -91,7 +103,18 @@ def get_categories():
         df["category"].unique().tolist()
     )
 
+@app.get("/brands")
+def get_brands():
 
+    df = pd.read_parquet(
+        "ml/predictions/forecast.parquet"
+    )
+
+    return sorted(
+        df["brand"].unique().tolist()
+    )
+
+    
 @app.get("/regions")
 def get_regions():
 
@@ -103,17 +126,16 @@ def get_regions():
         df["region"].unique().tolist()
     )
 
-@app.get("/insights")
-def get_insights():
+class InsightRequest(BaseModel):
+    summary_text: str
 
-    summary_text = """
-    Top Category: Beverages
-    Top Region: South
-    Average Revenue: 1237.71
-    Revenue Trend: Increasing
-    """
 
-    insights = generate_insights(summary_text)
+@app.post("/insights")
+def get_insights(request: InsightRequest):
+
+    insights = generate_insights(
+        request.summary_text
+    )
 
     return {
         "insights": insights
