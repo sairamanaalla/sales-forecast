@@ -6,6 +6,10 @@ This project is an end-to-end sales forecasting platform that demonstrates moder
 
 The solution ingests transactional sales data, enriches it with product and store reference data, performs data quality validation, generates future revenue forecasts using machine learning, and provides AI-powered business insights through an interactive dashboard.
 
+## Dashbaord
+
+![Sales Forecast Dashboard](screenshots/6D56C3DA-5CE1-46A9-A2A9-F6AF82C515D0.png)
+
 ---
 
 ## Key Capabilities
@@ -262,6 +266,12 @@ python src/forecasting/train_model.py
 
 python src/forecasting/predict.py
 ```
+
+## Environment Variables
+
+Create a `.env` file:
+
+DEEPSEEK_API_KEY=<your_key>
 
 ### Start FastAPI
 
